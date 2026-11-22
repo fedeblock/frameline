@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>frameline — minimal example</title>
+    <style>
+      body { margin: 0; padding: 24px; background: #08101c; color: #e6edf7; font: 14px/1.5 system-ui, sans-serif; }
+      #timeline { max-width: 900px; border: 1px solid #1e2c44; border-radius: 6px; }
+      #tc { font: 20px ui-monospace, Menlo, monospace; margin: 12px 0; }
+    </style>
+  </head>
+  <body>
+    <div id="tc">00:00:00:00</div>
+    <div id="timeline"></div>
+    <p>Press the ruler to move the playhead. Double-click a row to add a key; drag keys; Delete removes.</p>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

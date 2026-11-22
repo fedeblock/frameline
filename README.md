@@ -31,7 +31,14 @@ timeline.on("seek", ({ frame }) => myClock.seek(frame));
 timeline.on("keymove", ({ moves, phase }) => { if (phase === "end") { applyToMyData(moves); timeline.setModel(myModel()); } });
 ```
 
-Run the demo: `npm run demo` (in `packages/timeline`). It shows two timelines kept in step by one clock, an event log, and the rate switch between 25, 29.97 DF, 50 and 59.94 DF.
+## Try it
+
+| | Run | Source | What it is |
+| --- | --- | --- | --- |
+| **Minimal example** | `npm run example` → http://127.0.0.1:5374 | [`examples/minimal`](examples/minimal/main.ts) | About 35 lines: one timeline, a clock you own, add / move / remove keys. Start here. |
+| **Demo** | `npm run demo` → http://127.0.0.1:5373 | [`demo`](demo/main.ts) | Two timelines kept in step by one clock that can play, an event log, spans, and the rate switch between 25, 29.97 DF, 50 and 59.94 DF. |
+
+(Clone the repo and `npm install` first.)
 
 ## Synchronization
 
