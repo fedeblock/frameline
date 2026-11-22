@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>frameline — a timeline that marks time</title>
+    <style>
+      body { margin: 0; background: #08101c; color: #e6edf7; font: 14px/1.5 system-ui, sans-serif; }
+      main { max-width: 1100px; margin: 0 auto; padding: 24px 20px 48px; }
+      h1 { margin: 0 0 4px; font-size: 24px; } p.lead { margin: 0 0 18px; color: #8fa3bf; }
+      .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 14px 0; }
+      button, select { font: inherit; color: #e6edf7; background: #16233a; border: 1px solid #2a3c5c; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+      #tc { font: 22px/1 ui-monospace, "SF Mono", Menlo, monospace; min-width: 140px; }
+      .small { color: #8fa3bf; font-size: 12.5px; }
+      #main, #overview { border: 1px solid #1e2c44; border-radius: 6px; }
+      #overview { margin-top: 10px; --fl-key-size: 4px; --fl-ruler-height: 20px; }
+      pre { margin: 14px 0 0; padding: 10px 12px; min-height: 130px; background: #0b1320; border: 1px solid #1e2c44; border-radius: 6px; color: #8fa3bf; font-size: 12px; overflow: auto; }
+      kbd { background: #16233a; border: 1px solid #2a3c5c; border-radius: 4px; padding: 0 5px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>frameline</h1>
+      <p class="lead">A small timeline for marking time. Frame-exact, SMPTE timecode (drop-frame included), keys on rows, and a clock that stays yours.</p>
+
+      <div class="bar">
+        <button id="play" type="button">▶ Play</button>
+        <span id="tc" data-testid="tc">00:00:00:00</span>
+        <label>Rate <select id="rate" data-testid="rate">
+          <option value="25/1">25</option><option value="30000/1001" selected>29.97 DF</option><option value="50/1">50</option><option value="60000/1001">59.94 DF</option><option value="24/1">24</option>
+        </select></label>
+        <button id="fit" type="button">Fit</button>
+      </div>
+
+      <div id="main" data-testid="main"></div>
+      <div id="overview" data-testid="overview"></div>
+      <p class="small">Press the ruler to move the playhead (arrows: ±1 frame, <kbd>Shift</kbd> ±1 s). Drag keys — they snap to other keys and the playhead; hold <kbd>Alt</kbd> to turn snapping off. Drag on empty space to select, <kbd>Shift</kbd> to add. Double-click a row to add a key, <kbd>Delete</kbd> to remove. <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + wheel zooms. The lower timeline is kept in step with the upper one through the host's clock — nothing echoes.</p>
+      <pre id="log" data-testid="log"></pre>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
