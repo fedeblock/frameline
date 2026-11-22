@@ -142,6 +142,7 @@ export class Timeline extends EventTarget {
 
   /** Zoom so the whole duration fits. */
   fit(): void {
+    if (this.view.widthPx <= 0) return; // not laid out yet: the first measure fits
     this.fitted = true;
     this.setView({ pxPerFrame: fitPxPerFrame(this.model.duration, this.view.widthPx, this.limits), start: 0 });
   }
