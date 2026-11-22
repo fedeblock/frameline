@@ -1,6 +1,6 @@
 {
   "name": "frameline",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A small, dependency-free timeline for marking time: frame-exact, SMPTE timecode (drop-frame included), keyframes on rows, and a synchronization model built to follow any clock.",
   "keywords": [
     "timeline",
@@ -34,7 +34,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "demo": "vite demo --host 127.0.0.1 --strictPort --port 5373",
-    "build": "vite build && tsc -p tsconfig.build.json && node scripts/write-css.mjs",
+    "build": "vite build && tsc -p tsconfig.build.json && node scripts/write-css.mjs && node scripts/check-dist.mjs",
     "example": "vite examples/minimal --host 127.0.0.1 --strictPort --port 5374",
     "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
@@ -42,8 +42,7 @@
     "smpte-timecode": "1.3.6",
     "typescript": "5.9.3",
     "vite": "7.2.4",
-    "vitest": "5.1.1",
-    "@types/node": "24.10.1"
+    "vitest": "5.1.1"
   },
   "repository": {
     "type": "git",
