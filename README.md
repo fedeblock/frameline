@@ -40,6 +40,10 @@ timeline.on("keymove", ({ moves, phase }) => { if (phase === "end") { applyToMyD
 
 (Clone the repo and `npm install` first.)
 
+### Demos on GitHub Pages
+
+`npm run build:pages` builds a small site (a landing page, the demo and the minimal example) into `pages-dist/`; every link is relative, so it works under `https://<user>.github.io/<repo>/`. The workflow `.github/workflows/pages.yml` runs the tests, builds it and deploys it when a version tag (`v*`) is pushed, or by hand from the Actions tab. One-time setup: *Settings → Pages → Build and deployment → Source: GitHub Actions*. (A Pages site is public even when the repository is private.)
+
 ## Synchronization
 
 A timeline's job is to say *when*. These are the decisions that keep it honest.
