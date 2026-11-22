@@ -33,16 +33,18 @@ timeline.on("keymove", ({ moves, phase }) => { if (phase === "end") { applyToMyD
 
 ## Try it
 
-| | Run | Source | What it is |
-| --- | --- | --- | --- |
-| **Minimal example** | `npm run example` → http://127.0.0.1:5374 | [`examples/minimal`](examples/minimal/main.ts) | About 35 lines: one timeline, a clock you own, add / move / remove keys. Start here. |
-| **Demo** | `npm run demo` → http://127.0.0.1:5373 | [`demo`](demo/main.ts) | Two timelines kept in step by one clock that can play, an event log, spans, and the rate switch between 25, 29.97 DF, 50 and 59.94 DF. |
+**Live: https://fedeblock.github.io/frameline/**
 
-(Clone the repo and `npm install` first.)
+| | Live | Run it yourself | Source | What it is |
+| --- | --- | --- | --- | --- |
+| **Minimal example** | [open](https://fedeblock.github.io/frameline/examples/minimal/) | `npm run example` → http://127.0.0.1:5374 | [`examples/minimal`](examples/minimal/main.ts) | About 35 lines: one timeline, a clock you own, add / move / remove keys. Start here. |
+| **Demo** | [open](https://fedeblock.github.io/frameline/demo/) | `npm run demo` → http://127.0.0.1:5373 | [`demo`](demo/main.ts) | Two timelines kept in step by one clock that can play, an event log, spans, and the rate switch between 25, 29.97 DF, 50 and 59.94 DF. |
+
+(To run them yourself, clone the repo and `npm install` first.)
 
 ### Demos on GitHub Pages
 
-`npm run build:pages` builds a small site (a landing page, the demo and the minimal example) into `pages-dist/`; every link is relative, so it works under `https://<user>.github.io/<repo>/`. The workflow `.github/workflows/pages.yml` runs the tests, builds it and deploys it when a version tag (`v*`) is pushed, or by hand from the Actions tab. One-time setup: *Settings → Pages → Build and deployment → Source: GitHub Actions*. (A Pages site is public even when the repository is private.)
+The live site above comes from this repo. `npm run build:pages` builds a small site (a landing page, the demo and the minimal example) into `pages-dist/`; every link is relative, so it works under `https://<user>.github.io/<repo>/`. The workflow `.github/workflows/pages.yml` runs the tests, builds it and deploys it when a version tag (`v*`) is pushed, or by hand from the Actions tab. One-time setup: *Settings → Pages → Build and deployment → Source: GitHub Actions* (Pages on a private repository needs a paid GitHub plan).
 
 ## Synchronization
 

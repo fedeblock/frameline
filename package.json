@@ -48,5 +48,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fedeblock/frameline.git"
+  },
+  "homepage": "https://fedeblock.github.io/frameline/",
+  "bugs": {
+    "url": "https://github.com/fedeblock/frameline/issues"
   }
 }

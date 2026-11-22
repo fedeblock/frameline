@@ -2,7 +2,7 @@
 
 ## 0.1.1
 
-Fix: the published `style.d.ts` pointed at a bundler-only import (`./style.css?raw`), which broke type-checking for consumers without `skipLibCheck`. The build now checks that no declaration does that and that every file `package.json` points at exists.
+Fix: the published `style.d.ts` pointed at a bundler-only import (`./style.css?raw`), which broke type-checking for consumers without `skipLibCheck`. The build now checks that no declaration does that and that every file `package.json` points at exists. The package now links to the live demos (`homepage`) and the issue tracker (`bugs`).
 
 ## 0.1.0
 
