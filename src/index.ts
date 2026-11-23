@@ -5,4 +5,4 @@ export { describeRate, formatTimecode, parseTimecode, type FrameRate, type RateI
 export { rulerTicks, type Ticks } from "./ticks";
 export { snapFrame, clampDelta, nudgeBy, rowsInBand } from "./interaction";
 export { frameToX, xToFrame, visibleRange, zoomAt, fitPxPerFrame, clampScroll, type View, type ZoomLimits } from "./view";
-export type { EventMap, Key, KeyMove, KeyRef, Model, Options, Phase, Row, Span } from "./types";
+export type { EventMap, Key, KeyMove, KeyRef, Labels, Model, Options, Phase, Row, Span } from "./types";

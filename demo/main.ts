@@ -33,17 +33,19 @@ const model: Model = { duration: durationFrames(), rows: [
   { id: "stops", label: "City stops", keys: [], spans: [{ id: "s1", start: Math.round(14 * fps()), end: Math.round(19 * fps()) }, { id: "s2", start: Math.round(27 * fps()), end: Math.round(32 * fps()) }] },
 ] };
 
-// ---- two views of the same time ------------------------------------------------------------------------------------------------------------
+// ---- three views of the same time ----------------------------------------------------------------------------------------------------------
 const main = new Timeline(document.getElementById("main")!, { rate, model, snap: true });
 const overview = new Timeline(document.getElementById("overview")!, { rate, model, rowHeight: 6, labelWidth: 160, readOnly: true, minLabelPx: 140, renderHeader: (_r, el) => { el.textContent = ""; } });
-for (const t of [main, overview]) t.follow(() => clock.frame()); // pulled once per display frame: no timers, no queue, never more than a frame behind
+// a bare transport strip: no label column (labelWidth 0), the ruler and the playhead only
+const transport = new Timeline(document.getElementById("transport")!, { rate, model, rowHeight: 6, labelWidth: 0, minLabelPx: 140, labels: { ruler: "Playhead" } });
+for (const t of [main, overview, transport]) t.follow(() => clock.frame()); // pulled once per display frame: no timers, no queue, never more than a frame behind
 
 // ---- what the person does, and what the host answers --------------------------------------------------------------------------------------
 const logEl = document.getElementById("log")!;
 const lines: string[] = [];
 const say = (type: string, detail: unknown) => { lines.unshift(`${type} ${JSON.stringify(detail)}`); lines.length = Math.min(lines.length, 9); logEl.textContent = lines.join("\n"); };
 
-for (const t of [main, overview]) {
+for (const t of [main, overview, transport]) {
   t.on("seek", ({ frame, phase }) => { say("seek", { frame, phase }); clock.seek(frame); });   // the host's clock moves; both views follow it
 }
 main.on("keymove", ({ moves, phase }) => {
@@ -57,7 +59,7 @@ main.on("view", ({ start, pxPerFrame }) => say("view", { start: Math.round(start
 
 function apply(moves: KeyMove[]) { for (const m of moves) { const k = model.rows.find((r) => r.id === m.rowId)?.keys.find((x) => x.id === m.keyId); if (k) k.frame = m.to; } refresh(); }
 const copy = (): Model => ({ ...model, rows: model.rows.map((r) => ({ ...r, keys: [...r.keys], spans: r.spans?.map((s) => ({ ...s })) })) });
-function refresh() { main.setModel(copy()); overview.setModel(copy()); }
+function refresh() { main.setModel(copy()); overview.setModel(copy()); transport.setModel(copy()); }
 
 // ---- the page's own controls -------------------------------------------------------------------------------------------------------------------
 const tc = document.getElementById("tc")!;
@@ -74,9 +76,9 @@ document.getElementById("rate")!.addEventListener("change", (e) => {
     for (const s of row.spans ?? []) { s.start = Math.round((s.start / oldFps) * fps()); s.end = Math.round((s.end / oldFps) * fps()); }
   }
   clock.seek(Math.round(was * fps()));
-  main.setRate(rate); overview.setRate(rate); refresh(); main.fit(); overview.fit();
+  main.setRate(rate); overview.setRate(rate); transport.setRate(rate); refresh(); main.fit(); overview.fit(); transport.fit();
 });
 const readout = () => { tc.textContent = formatTimecode(clock.frame(), rate); requestAnimationFrame(readout); };
 readout();
 
-(window as unknown as { __demo: unknown }).__demo = { main, overview, clock, model, lines, get rate() { return rate; } };
+(window as unknown as { __demo: unknown }).__demo = { main, overview, transport, clock, model, lines, format: formatTimecode, get rate() { return rate; } };

@@ -86,12 +86,13 @@ What frameline does **not** do, on purpose: play, keep time, resolve conflicts b
 | `readOnly` | `false` | no dragging, adding or removing; scrubbing still works |
 | `autoScroll` | `false` | keep the playhead in view when moved through the API |
 | `injectStyles` | `true` | put the default stylesheet in the page; with a strict CSP use `false` and import `frameline/style.css` |
+| `labels: { ruler }` | `"Time"` | the words frameline says itself (the ruler's accessible name): give them in your language; `setLabels()` changes them later |
 | `labelFormat(frame, { rate, step })` | seconds, or `SS:FF` when zoomed in | the text of a ruler label |
 | `renderHeader(row, element)` | the row's label | fill a row's label cell (buttons, icons); return a cleanup function |
 
 ### Methods (all silent)
 
-`setModel(model)` · `setRate(rate)` · `setTime(frame)` · `follow(getFrame)` / `unfollow()` · `setView({ start?, pxPerFrame? })` · `getView()` · `fit()` · `ensureVisible(frame)` · `select(keys)` / `getSelection()` · `on(type, handler)` (returns an unsubscribe function; it is also an `EventTarget`) · `destroy()` · `time` (the playhead frame)
+`setModel(model)` · `setRate(rate)` · `setLabels(labels)` · `setTime(frame)` · `follow(getFrame)` / `unfollow()` · `setView({ start?, pxPerFrame? })` · `getView()` · `fit()` · `ensureVisible(frame)` · `select(keys)` / `getSelection()` · `on(type, handler)` (returns an unsubscribe function; it is also an `EventTarget`) · `destroy()` · `time` (the playhead frame)
 
 ### Events (only the person's actions)
 

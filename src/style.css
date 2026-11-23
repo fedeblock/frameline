@@ -1,11 +1,12 @@
 .fl{--fl-bg:#0b1320;--fl-row:#101a2b;--fl-line:#1e2c44;--fl-text:#8fa3bf;--fl-head:#e6edf7;--fl-key:#4da3ff;--fl-key-selected:#f2b84b;--fl-playhead:#ff6b6b;--fl-box:#4da3ff33;--fl-ruler-height:24px;--fl-key-size:9px;--fl-font:11px/1.2 system-ui,sans-serif;
   position:relative;display:grid;grid-template-columns:var(--fl-label-width,160px) minmax(0,1fr);background:var(--fl-bg);color:var(--fl-text);font:var(--fl-font);overflow-y:auto;user-select:none;-webkit-user-select:none}
+.fl.fl-bare{grid-template-columns:minmax(0,1fr)}  /* labelWidth 0: no label column, so the scroll area is the only one (auto-placement put it in a 0 px column) */
 .fl-heads{border-right:1px solid var(--fl-line)}
-.fl-corner{height:var(--fl-ruler-height);border-bottom:1px solid var(--fl-line)}
+.fl-corner{position:relative;z-index:2;height:var(--fl-ruler-height);border-bottom:1px solid var(--fl-line);background:var(--fl-bg)}
 .fl-head{display:flex;align-items:center;gap:6px;padding:0 8px;box-sizing:border-box;border-top:1px solid var(--fl-line);color:var(--fl-head);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fl-scroll{position:relative;overflow-x:auto;overflow-y:hidden;min-width:0}
 .fl-content{position:relative}
-.fl-ruler{position:relative;height:var(--fl-ruler-height);border-bottom:1px solid var(--fl-line);cursor:ew-resize;outline:none;touch-action:none}
+.fl-ruler{position:relative;z-index:2;background:var(--fl-bg);height:var(--fl-ruler-height);border-bottom:1px solid var(--fl-line);cursor:ew-resize;outline:none;touch-action:none}
 .fl-ruler:focus-visible{box-shadow:inset 0 0 0 2px var(--fl-key)}
 .fl-tick{position:absolute;bottom:0;width:1px;background:#33445f;pointer-events:none}
 .fl-tick.minor{height:4px}.fl-tick.major{height:10px;background:var(--fl-text)}
@@ -18,7 +19,7 @@
 .fl-key:focus-visible{outline:2px solid #fff;outline-offset:2px}
 .fl-key[aria-pressed="true"]{background:var(--fl-key-selected);box-shadow:0 0 0 1.5px #fff}
 .fl-key.dragging{cursor:grabbing}
-.fl-playhead{position:absolute;top:0;bottom:0;left:0;width:0;pointer-events:none;will-change:transform}
+.fl-playhead{position:absolute;top:0;bottom:0;left:0;width:0;z-index:3;pointer-events:none;will-change:transform}  /* above the ruler (z-index 2), as it always was by order */
 .fl-playhead::before{content:"";position:absolute;top:0;bottom:0;left:0;width:1px;background:var(--fl-playhead)}
 .fl-playhead::after{content:"";position:absolute;top:0;left:-4px;border:4px solid transparent;border-top-color:var(--fl-playhead)}
 .fl-box{position:absolute;display:none;background:var(--fl-box);border:1px solid var(--fl-key);pointer-events:none}

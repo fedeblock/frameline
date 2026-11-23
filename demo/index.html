@@ -13,7 +13,7 @@
       button, select { font: inherit; color: #e6edf7; background: #16233a; border: 1px solid #2a3c5c; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
       #tc { font: 22px/1 ui-monospace, "SF Mono", Menlo, monospace; min-width: 140px; }
       .small { color: #8fa3bf; font-size: 12.5px; }
-      #main, #overview { border: 1px solid #1e2c44; border-radius: 6px; }
+      #main, #overview, #transport { border: 1px solid #1e2c44; border-radius: 6px; }
       #overview { margin-top: 10px; --fl-key-size: 4px; --fl-ruler-height: 20px; }
       pre { margin: 14px 0 0; padding: 10px 12px; min-height: 130px; background: #0b1320; border: 1px solid #1e2c44; border-radius: 6px; color: #8fa3bf; font-size: 12px; overflow: auto; }
       kbd { background: #16233a; border: 1px solid #2a3c5c; border-radius: 4px; padding: 0 5px; }
@@ -35,6 +35,7 @@
 
       <div id="main" data-testid="main"></div>
       <div id="overview" data-testid="overview"></div>
+      <div id="transport" data-testid="transport" style="margin-top:10px"></div>
       <p class="small">Press the ruler to move the playhead (arrows: ±1 frame, <kbd>Shift</kbd> ±1 s). Drag keys — they snap to other keys and the playhead; hold <kbd>Alt</kbd> to turn snapping off. Drag on empty space to select, <kbd>Shift</kbd> to add. Double-click a row to add a key, <kbd>Delete</kbd> to remove. <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + wheel zooms. The lower timeline is kept in step with the upper one through the host's clock — nothing echoes.</p>
       <pre id="log" data-testid="log"></pre>
     </main>

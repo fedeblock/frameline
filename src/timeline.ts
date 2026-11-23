@@ -2,7 +2,7 @@ import { clampDelta, nudgeBy, rowsInBand, snapFrame } from "./interaction";
 import { css } from "./style";
 import { describeRate, formatTimecode, type FrameRate } from "./timecode";
 import { rulerTicks } from "./ticks";
-import type { EventMap, Key, KeyMove, KeyRef, Model, Options, Phase, Row } from "./types";
+import type { EventMap, Key, KeyMove, KeyRef, Labels, Model, Options, Phase, Row } from "./types";
 import { clampScroll, fitPxPerFrame, frameToX, visibleRange, xToFrame, zoomAt, type View } from "./view";
 
 const SNAP_PX = 6;
@@ -45,8 +45,10 @@ export class Timeline extends EventTarget {
   private raf = 0;
   private resize: ResizeObserver | null = null;
   private fitted = false;
+  private fitZoom = 0; // the zoom `fit()` gave: a view still at it is "fitted" and follows a change of width; one the person zoomed does not
   private destroyed = false;
   private pointerOps: (() => void)[] = [];
+  private programmaticScroll = 0; // where WE put scrollLeft, as the browser kept it: a scroll event that lands there is not the person's
 
   constructor(host: HTMLElement, options: Options) {
     super();
@@ -70,9 +72,9 @@ export class Timeline extends EventTarget {
     this.rowsEl = el("div", "fl-rows", this.content);
     this.playhead = el("div", "fl-playhead", this.content);
     this.box = el("div", "fl-box", this.content);
-    if (this.o.labelWidth === 0) this.heads.style.display = "none";
+    if (this.o.labelWidth === 0) { this.heads.style.display = "none"; host.classList.add("fl-bare"); }
     this.ruler.setAttribute("role", "slider");
-    this.ruler.setAttribute("aria-label", "Time");
+    this.setLabels(options.labels ?? {});
     this.ruler.tabIndex = 0;
     this.bind();
     this.timeFrame = options.time ?? 0;
@@ -99,11 +101,31 @@ export class Timeline extends EventTarget {
     for (const id of [...this.selection.keys()]) if (!present.has(id)) this.selection.delete(id);
     this.renderHeads();
     this.renderRows();
+    this.pinHeaders();
     this.layout();
     if (!this.fitted && this.view.widthPx > 0) this.fit();
   }
 
-  setRate(rate: FrameRate): void { this.rate = rate; this.renderRuler(); this.paintPlayhead(); }
+  /** Sets the words frameline says itself (the ruler's accessible name). Fires nothing; a text left out goes back to the English default. */
+  setLabels(labels: Labels): void { this.ruler.setAttribute("aria-label", labels.ruler ?? "Time"); }
+
+  setRate(rate: FrameRate): void {
+    this.rate = rate;
+    this.renderRuler();
+    this.paintPlayhead();
+    for (const row of this.model.rows) for (const key of row.keys) this.keyEls.get(keyId({ rowId: row.id, keyId: key.id }))?.setAttribute("aria-label", this.keyLabel(row, key)); // their names carry a timecode
+  }
+
+  /** The ruler and the corner stay at the top of the visible area while the rows scroll (the host is the vertical scroller). */
+  private pinHeaders(): void {
+    const y = this.host.scrollTop;
+    const transform = y > 0 ? `translateY(${y}px)` : "";
+    this.ruler.style.transform = transform;
+    const corner = this.heads.querySelector<HTMLElement>(".fl-corner");
+    if (corner) corner.style.transform = transform;
+  }
+
+  private keyLabel(row: Row, key: Key): string { return `${row.label ?? row.id}: ${formatTimecode(key.frame, this.rate)}`; }
 
   /** Moves the playhead now. Fires nothing. A fractional frame is shown as given (smooth), but anything the person seeks is whole. */
   setTime(frame: number): void {
@@ -132,7 +154,13 @@ export class Timeline extends EventTarget {
     const ppf = Math.min(this.limits.max, Math.max(this.limits.min, v.pxPerFrame ?? this.view.pxPerFrame));
     this.view = clampScroll({ ...this.view, pxPerFrame: ppf, scrollFrame: v.start ?? this.view.scrollFrame }, this.model.duration);
     this.layout();
-    this.scroll.scrollLeft = this.view.scrollFrame * ppf;
+    this.setScroll(this.view.scrollFrame * ppf);
+  }
+
+  /** Puts scrollLeft where the view says, remembering what the browser kept (it rounds: 130.65 becomes 131 at a pixel ratio of 1). */
+  private setScroll(px: number): void {
+    this.scroll.scrollLeft = px;
+    this.programmaticScroll = this.scroll.scrollLeft;
   }
 
   getView(): { start: number; end: number; pxPerFrame: number } {
@@ -145,6 +173,7 @@ export class Timeline extends EventTarget {
     if (this.view.widthPx <= 0) return; // not laid out yet: the first measure fits
     this.fitted = true;
     this.setView({ pxPerFrame: fitPxPerFrame(this.model.duration, this.view.widthPx, this.limits), start: 0 });
+    this.fitZoom = this.view.pxPerFrame;
   }
 
   /** Scrolls only if `frame` is outside the visible part. */
@@ -166,7 +195,7 @@ export class Timeline extends EventTarget {
     this.resize?.disconnect();
     for (const off of this.pointerOps) off();
     for (const c of this.headerCleanups) c();
-    this.host.classList.remove("fl");
+    this.host.classList.remove("fl", "fl-bare");
     this.host.replaceChildren();
   }
 
@@ -177,8 +206,9 @@ export class Timeline extends EventTarget {
   private measure(): void {
     const width = this.scroll.clientWidth;
     if (width === this.view.widthPx) return;
+    const atFit = this.fitted && this.view.pxPerFrame === this.fitZoom;   // still showing the whole sequence: keep showing it in the new width
     this.view = { ...this.view, widthPx: width };
-    if (!this.fitted && width > 0 && this.model.duration > 0) this.fit(); else this.layout();
+    if ((!this.fitted || atFit) && width > 0 && this.model.duration > 0) this.fit(); else this.layout();
   }
 
   /** The content is as wide as the sequence at this zoom; ticks and keys are placed from the numbers, not measured. */
@@ -263,7 +293,7 @@ export class Timeline extends EventTarget {
         const k = el("button", `fl-key ${key.className ?? ""}`.trim(), rowEl);
         k.type = "button";
         k.dataset.row = row.id; k.dataset.key = key.id; k.dataset.frame = String(key.frame);
-        k.setAttribute("aria-label", `${row.label ?? row.id}: ${formatTimecode(key.frame, this.rate)}`);
+        k.setAttribute("aria-label", this.keyLabel(row, key));
         if (key.title) k.title = key.title;
         for (const [name, value] of Object.entries(key.attrs ?? {})) k.setAttribute(name, value);
         k.style.left = `${key.frame * this.view.pxPerFrame}px`;
@@ -311,6 +341,8 @@ export class Timeline extends EventTarget {
       this.emit("seek", { frame, phase: "end" });
     });
 
+    this.listen(this.host, "scroll", () => this.pinHeaders());
+
     // zoom with Ctrl/Cmd + wheel around the pointer; plain scrolling is the browser's own
     this.listen(this.scroll, "wheel", (e: WheelEvent) => {
       if (!(e.ctrlKey || e.metaKey)) return;
@@ -318,12 +350,12 @@ export class Timeline extends EventTarget {
       const x = e.clientX - this.scroll.getBoundingClientRect().left;
       this.view = zoomAt(this.view, Math.exp(-e.deltaY * 0.002), x, this.limits, this.model.duration);
       this.layout();
-      this.scroll.scrollLeft = this.view.scrollFrame * this.view.pxPerFrame;
+      this.setScroll(this.view.scrollFrame * this.view.pxPerFrame);
       this.emitView();
     }, { passive: false });
     this.listen(this.scroll, "scroll", () => {
+      if (Math.abs(this.scroll.scrollLeft - this.programmaticScroll) < 1) return; // set by us (setView/zoom), or a rounding of it: not the person's
       const scrollFrame = this.scroll.scrollLeft / this.view.pxPerFrame;
-      if (Math.abs(scrollFrame - this.view.scrollFrame) < 1e-6) return; // set by us (setView/zoom): not the person's
       this.view = { ...this.view, scrollFrame };
       this.renderRuler();
       this.emitView();

@@ -60,6 +60,12 @@ export interface EventMap {
   view: { start: number; end: number; pxPerFrame: number };
 }
 
+/** The words frameline says itself, for a screen reader. Everything else it shows is yours (row labels, key titles, the format of the ruler). */
+export interface Labels {
+  /** The accessible name of the ruler, which is a slider. Default "Time". */
+  ruler?: string;
+}
+
 export interface Options {
   /** Needed for the ruler's labels and the Shift-arrow jump. Use `{ n: 30000, d: 1001 }` for 29.97. */
   rate: FrameRate;
@@ -82,6 +88,8 @@ export interface Options {
   autoScroll?: boolean;
   /** Put the default stylesheet in the page (once). Default true; turn it off and import `frameline/style.css` yourself under a strict CSP. */
   injectStyles?: boolean;
+  /** The words frameline says itself (the ruler's accessible name): give them in your language. */
+  labels?: Labels;
   /** The text of a ruler label. Default: seconds (`1:05`), or `SS:FF` when the marks are closer than a second. */
   labelFormat?(frame: number, context: { rate: FrameRate; step: number }): string;
   /** Fill a row's label cell (add buttons, icons…). Return a function to clean up. Default: the row's `label` as text. */
