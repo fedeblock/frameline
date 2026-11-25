@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+New: **editable spans.** A `Span` with `editable: true` is drawn taller with a handle on each edge; the person moves it by dragging its body and stretches it from an edge, and you hear it on the new `spanmove` event (`phase` `start`/`move`/`end`, like `keymove`: preview while dragging, commit on `end`, the model changes only when you call `setModel`). `Span.minLength` (frames, default 1) limits the stretch. Snapping, Alt to turn it off, keyboard (arrows move a focused span, Alt+arrows stretch its end) and `readOnly` work as for keys. Pure helpers exported: `dragSpan`, `snapSpanDelta`. Spans that are not `editable` are unchanged (drawn behind the keys, not interactive). The drag is followed on the window (not on the element), so a `setModel` that redraws the rows in the middle of it does not lose it, only the pointer that started it counts, and `destroy()` during a drag leaves nothing listening.
+
+Dev: DOM tests (`test/dom.test.ts`, jsdom 30.1.3 as a pinned devDependency; jsdom has no layout, so the tests give it one: 1000 px, 1000 frames, one pixel per frame) for spans, keys, the ruler and the read-only mode.
+
 ## 0.2.0
 
 New: `Options.labels.ruler` and `setLabels()` — the accessible name of the ruler (a slider) was a fixed English "Time"; give it in your language (default unchanged).

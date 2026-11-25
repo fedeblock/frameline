@@ -1,3 +1,4 @@
+import type { SpanEdge } from "./interaction";
 import type { FrameRate } from "./timecode";
 
 /** A mark on a row. `frame` is a whole frame number: time in frameline is always frames at the stated rate, never floating seconds. */
@@ -14,11 +15,15 @@ export interface Key {
   attrs?: Record<string, string>;
 }
 
-/** A stretch of time on a row (a hold, a stop, a clip): drawn behind the keys, not interactive. */
+/** A stretch of time on a row (a hold, a stop, a clip): drawn behind the keys. Not interactive unless it is `editable`. */
 export interface Span {
   id: string;
   start: number;
   end: number;
+  /** The person can move it (drag the body) and stretch it (drag an edge): you hear it on `spanmove` and answer with `setModel`. Drawn taller, with a handle on each edge. Default false. */
+  editable?: boolean;
+  /** The shortest it may be stretched to, in frames. Default 1. */
+  minLength?: number;
   className?: string;
   title?: string;
   attrs?: Record<string, string>;
@@ -43,6 +48,9 @@ export interface Model {
 export interface KeyRef { rowId: string; keyId: string }
 export interface KeyMove extends KeyRef { from: number; to: number }
 export type Phase = "start" | "move" | "end";
+export type { SpanEdge };
+/** A span being moved (`edge: "move"`) or stretched from one of its edges. */
+export interface SpanMove { rowId: string; spanId: string; edge: SpanEdge; from: { start: number; end: number }; to: { start: number; end: number } }
 
 /** Everything the timeline tells you. Only what the PERSON does is announced: calling `setTime`, `setModel`, `setView` or `select` never fires an event. */
 export interface EventMap {
@@ -50,6 +58,8 @@ export interface EventMap {
   seek: { frame: number; phase: Phase };
   /** Keys are being moved (or were nudged). Preview on `move`, commit on `end`: the timeline never changes your model, it shows the proposal until you answer with `setModel`. */
   keymove: { moves: KeyMove[]; phase: Phase };
+  /** An editable span is being moved or stretched (or was nudged with the arrow keys: Alt+arrow stretches the end). Preview on `move`, commit on `end`, like `keymove`. */
+  spanmove: SpanMove & { phase: Phase };
   /** Double-click on a row. */
   keyadd: { rowId: string; frame: number };
   /** Delete or Backspace on a selection. */

@@ -14,6 +14,12 @@
 .fl-row{position:relative;box-sizing:border-box;border-top:1px solid var(--fl-line);touch-action:pan-x}
 .fl-row:nth-child(even){background:var(--fl-row)}
 .fl-span{position:absolute;top:50%;height:4px;margin-top:-2px;border-radius:2px;background:var(--fl-span,#2f6b52);pointer-events:none}
+.fl-span.editable{color:var(--fl-head);top:3px;bottom:3px;height:auto;margin-top:0;border-radius:3px;pointer-events:auto;cursor:grab;touch-action:none;box-sizing:border-box}
+.fl-span.editable.dragging{cursor:grabbing}
+.fl-span.editable:focus-visible{outline:2px solid var(--fl-key);outline-offset:1px}
+.fl-span-handle{position:absolute;top:0;bottom:0;width:7px;cursor:ew-resize}
+.fl-span-handle.start{left:0}.fl-span-handle.end{right:0}
+.fl-span-handle::after{content:"";position:absolute;top:25%;bottom:25%;left:50%;width:2px;margin-left:-1px;border-radius:1px;background:currentColor;opacity:.55}
 .fl-key{position:absolute;top:50%;width:var(--fl-key-size);height:var(--fl-key-size);margin:calc(var(--fl-key-size) / -2) 0 0 calc(var(--fl-key-size) / -2);padding:0;border:0;border-radius:1px;background:var(--fl-key);transform:rotate(45deg);cursor:grab;touch-action:none}
 .fl-key:hover{filter:brightness(1.25)}
 .fl-key:focus-visible{outline:2px solid #fff;outline-offset:2px}

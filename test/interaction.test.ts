@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampDelta, nudgeBy, rowsInBand, snapFrame } from "../src/interaction";
+import { clampDelta, dragSpan, nudgeBy, rowsInBand, snapFrame, snapSpanDelta } from "../src/interaction";
 
 describe("snapping", () => {
   it("pulls a frame to the nearest target inside the threshold, else leaves it", () => {
@@ -47,5 +47,46 @@ describe("selecting with a rectangle", () => {
     expect(rowsInBand(80, 200, 22, 4)).toEqual([3]);
     expect(rowsInBand(100, 200, 22, 4)).toEqual([]);
     expect(rowsInBand(40, 10, 22, 4)).toEqual([0, 1]);                 // dragged upwards: same band
+  });
+});
+
+describe("dragging a span", () => {
+  const span = { start: 100, end: 200 };
+
+  it("moving keeps its length and stops at the ends of the sequence", () => {
+    expect(dragSpan(span, "move", 30, 0, 1000)).toEqual({ start: 130, end: 230 });
+    expect(dragSpan(span, "move", -500, 0, 1000)).toEqual({ start: 0, end: 100 });
+    expect(dragSpan(span, "move", 5000, 0, 1000)).toEqual({ start: 900, end: 1000 });
+  });
+
+  it("an edge stretches it: the start stops at 0 and one frame before the end, the end at the duration and one frame after the start", () => {
+    expect(dragSpan(span, "start", -40, 0, 1000)).toEqual({ start: 60, end: 200 });
+    expect(dragSpan(span, "start", -500, 0, 1000)).toEqual({ start: 0, end: 200 });
+    expect(dragSpan(span, "start", 500, 0, 1000)).toEqual({ start: 199, end: 200 });
+    expect(dragSpan(span, "end", 40, 0, 1000)).toEqual({ start: 100, end: 240 });
+    expect(dragSpan(span, "end", 5000, 0, 1000)).toEqual({ start: 100, end: 1000 });
+    expect(dragSpan(span, "end", -500, 0, 1000)).toEqual({ start: 100, end: 101 });
+  });
+
+  it("a longer minimum length is respected, and a span already shorter than it can still be moved", () => {
+    expect(dragSpan(span, "end", -90, 0, 1000, 25)).toEqual({ start: 100, end: 125 });
+    expect(dragSpan({ start: 10, end: 12 }, "move", 5, 0, 1000, 25)).toEqual({ start: 15, end: 17 });
+  });
+
+  it("answers whole frames", () => {
+    const got = dragSpan(span, "move", 12.6, 0, 1000);
+    expect(Number.isInteger(got.start) && Number.isInteger(got.end)).toBe(true);
+  });
+});
+
+describe("snapping a span", () => {
+  it("pulls the edge that is closer to a target, for a move: the start or the end, whichever lands nearer", () => {
+    expect(snapSpanDelta({ start: 100, end: 200 }, "move", 48, [150, 400], 5)).toBe(50);        // the start would land on 148: it snaps to 150
+    expect(snapSpanDelta({ start: 100, end: 200 }, "move", 198, [400], 5)).toBe(200);           // the end would land on 398: it snaps to 400, so the move is 200
+  });
+
+  it("for an edge snaps only that edge; with no target near, the move is the nearest whole frame", () => {
+    expect(snapSpanDelta({ start: 100, end: 200 }, "end", 48, [250], 5)).toBe(50);
+    expect(snapSpanDelta({ start: 100, end: 200 }, "start", 20.4, [], 5)).toBe(20);
   });
 });

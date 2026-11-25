@@ -100,6 +100,7 @@ What frameline does **not** do, on purpose: play, keep time, resolve conflicts b
 | --- | --- |
 | `seek` | `{ frame, phase }`, whole frames |
 | `keymove` | `{ moves: [{ rowId, keyId, from, to }], phase }`, with the snapped proposal; arrows nudge one frame (Shift: a second), reported with `phase: "end"` |
+| `spanmove` | `{ rowId, spanId, edge: "move" \| "start" \| "end", from: { start, end }, to: { start, end }, phase }`: a span with `editable: true` was dragged by its body (`move`) or stretched from an edge; snapped to the playhead, the ends and other keys and spans (Alt turns snapping off), never shorter than `minLength` frames or outside the sequence. Arrows move a focused span (Shift: a second), Alt+arrows stretch its end; reported with `phase: "end"`. Same rule as keys: you answer with `setModel` or the span returns |
 | `keyadd` | `{ rowId, frame }` (double-click) |
 | `keyremove` | `{ keys: [{ rowId, keyId }] }` (Delete / Backspace) |
 | `select` | `{ keys }` |

@@ -1,4 +1,4 @@
-import { clampDelta, nudgeBy, rowsInBand, snapFrame } from "./interaction";
+import { clampDelta, dragSpan, nudgeBy, rowsInBand, snapFrame, snapSpanDelta, type SpanEdge } from "./interaction";
 import { css } from "./style";
 import { describeRate, formatTimecode, type FrameRate } from "./timecode";
 import { rulerTicks } from "./ticks";
@@ -40,7 +40,7 @@ export class Timeline extends EventTarget {
   private readonly box: HTMLElement;
   private headerCleanups: (() => void)[] = [];
   private keyEls = new Map<string, HTMLButtonElement>();
-  private spanEls: { el: HTMLElement; start: number; end: number }[] = [];
+  private spanEls: { el: HTMLElement; start: number; end: number; rowId: string; spanId: string }[] = [];
   private follower: (() => number) | null = null;
   private raf = 0;
   private resize: ResizeObserver | null = null;
@@ -285,7 +285,15 @@ export class Timeline extends EventTarget {
         s.dataset.span = span.id;
         if (span.title) s.title = span.title;
         for (const [name, value] of Object.entries(span.attrs ?? {})) s.setAttribute(name, value);
-        this.spanEls.push({ el: s, start: span.start, end: span.end });
+        this.spanEls.push({ el: s, start: span.start, end: span.end, rowId: row.id, spanId: span.id });
+        s.dataset.row = row.id;
+        if (span.editable) {
+          s.classList.add("editable");
+          s.tabIndex = 0;
+          s.setAttribute("role", "group");
+          s.setAttribute("aria-label", span.title ?? `${row.label ?? row.id}: ${formatTimecode(span.start, this.rate)} – ${formatTimecode(span.end, this.rate)}`);
+          for (const edge of ["start", "end"] as const) { const h = el("div", `fl-span-handle ${edge}`, s); h.dataset.edge = edge; }
+        }
         s.style.left = `${span.start * this.view.pxPerFrame}px`;
         s.style.width = `${Math.max(1, (span.end - span.start) * this.view.pxPerFrame)}px`;
       }
@@ -364,7 +372,7 @@ export class Timeline extends EventTarget {
     // the rows: double-click adds, a drag on empty space selects with a rectangle, a press on a key selects and moves
     this.listen(this.rowsEl, "dblclick", (e: MouseEvent) => {
       if (this.o.readOnly) return;
-      if ((e.target as HTMLElement).closest(".fl-key")) return;
+      if ((e.target as HTMLElement).closest(".fl-key, .fl-span.editable")) return;
       // the row comes from the position, not from the event target: after a press that captured the pointer the target is the container
       const index = Math.floor((e.clientY - this.rowsEl.getBoundingClientRect().top) / this.o.rowHeight);
       const row = this.model.rows[index];
@@ -372,10 +380,22 @@ export class Timeline extends EventTarget {
     });
     this.listen(this.rowsEl, "pointerdown", (e: PointerEvent) => {
       const keyEl = (e.target as HTMLElement).closest<HTMLButtonElement>(".fl-key");
-      if (keyEl) this.pressKey(e, keyEl); else this.pressSpace(e);
+      const spanEl = (e.target as HTMLElement).closest<HTMLElement>(".fl-span.editable");
+      if (keyEl) this.pressKey(e, keyEl); else if (spanEl) this.pressSpan(e, spanEl); else this.pressSpace(e);
     });
     this.listen(this.rowsEl, "keydown", (e: KeyboardEvent) => {
       const keyEl = (e.target as HTMLElement).closest<HTMLButtonElement>(".fl-key");
+      const spanEl = (e.target as HTMLElement).closest<HTMLElement>(".fl-span.editable");
+      if (!keyEl && spanEl && (e.key === "ArrowLeft" || e.key === "ArrowRight") && !this.o.readOnly) {
+        e.preventDefault();
+        const found = this.spanOf(spanEl);
+        if (!found) return;
+        const by = nudgeBy(e.key, e.shiftKey, describeRate(this.rate).nominal);
+        const edge: SpanEdge = e.altKey ? "end" : "move";
+        const to = dragSpan(found, edge, by, 0, this.model.duration, found.minLength);
+        if (to.start !== found.start || to.end !== found.end) this.emit("spanmove", { rowId: found.rowId, spanId: found.spanId, edge, from: { start: found.start, end: found.end }, to, phase: "end" });
+        return;
+      }
       if (!keyEl) return;
       const ref = { rowId: keyEl.dataset.row!, keyId: keyEl.dataset.key! };
       if ((e.key === "Delete" || e.key === "Backspace") && !this.o.readOnly) {
@@ -409,6 +429,52 @@ export class Timeline extends EventTarget {
   }
 
   /** The moves that apply `delta` frames to the selection (or to `grabbed` only if nothing is selected). */
+  private spanOf(spanEl: HTMLElement): { rowId: string; spanId: string; start: number; end: number; minLength: number } | null {
+    const rowId = spanEl.dataset.row!, spanId = spanEl.dataset.span!;
+    const span = this.model.rows.find((r) => r.id === rowId)?.spans?.find((s) => s.id === spanId);
+    return span ? { rowId, spanId, start: span.start, end: span.end, minLength: span.minLength ?? 1 } : null;
+  }
+
+  /** A press on an editable span: the body moves it, an edge stretches it. The timeline shows the proposal (`move`) and tells you (`end`); it is you who changes the model. */
+  private pressSpan(e: PointerEvent, spanEl: HTMLElement): void {
+    const found = this.spanOf(spanEl);
+    if (!found || this.o.readOnly) return;
+    const handle = (e.target as HTMLElement).closest<HTMLElement>(".fl-span-handle");
+    const edge: SpanEdge = handle?.dataset.edge === "start" ? "start" : handle?.dataset.edge === "end" ? "end" : "move";
+    const startX = e.clientX, from = { start: found.start, end: found.end };
+    let dragging = false, to = from;
+    const thresholdFrames = (typeof this.o.snap === "number" ? this.o.snap : this.o.snap === false ? 0 : SNAP_PX) / this.view.pxPerFrame;
+    const others = this.model.rows.flatMap((row) => [...row.keys.map((k) => k.frame), ...(row.spans ?? []).filter((s) => !(row.id === found.rowId && s.id === found.spanId)).flatMap((s) => [s.start, s.end])]);
+    const paint = (s: { start: number; end: number }) => { spanEl.style.left = `${s.start * this.view.pxPerFrame}px`; spanEl.style.width = `${Math.max(1, (s.end - s.start) * this.view.pxPerFrame)}px`; };
+    const info = () => ({ rowId: found.rowId, spanId: found.spanId, edge, from, to });
+    // the gesture is followed on the window, not on the span: the host may answer a `spanmove` (or anything else) with `setModel`, which redraws the rows and replaces the span's element mid-drag
+    const mine = (ev: PointerEvent) => ev.pointerId === e.pointerId;
+    const onMove = (ev: PointerEvent) => {
+      if (!mine(ev) || (!dragging && Math.abs(ev.clientX - startX) < DRAG_START_PX)) return;
+      const wasDragging = dragging;
+      dragging = true;
+      const raw = (ev.clientX - startX) / this.view.pxPerFrame;
+      const delta = ev.altKey ? Math.round(raw) : snapSpanDelta(from, edge, raw, [this.timeFrame, 0, this.model.duration, ...others], thresholdFrames);
+      to = dragSpan(from, edge, delta, 0, this.model.duration, found.minLength);
+      const live = this.rowsEl.querySelector<HTMLElement>(`.fl-span[data-row="${CSS.escape(found.rowId)}"][data-span="${CSS.escape(found.spanId)}"]`) ?? spanEl;   // the span as it is drawn now
+      Object.assign(live.style, { left: `${to.start * this.view.pxPerFrame}px`, width: `${Math.max(1, (to.end - to.start) * this.view.pxPerFrame)}px` });
+      live.classList.add("dragging");
+      this.emit("spanmove", { ...info(), phase: wasDragging ? "move" : "start" });
+    };
+    const stop = () => { window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); window.removeEventListener("pointercancel", onUp); this.pointerOps = this.pointerOps.filter((op) => op !== stop); };
+    const onUp = (ev: PointerEvent) => {
+      if (!mine(ev)) return;
+      stop();
+      const live = this.rowsEl.querySelector<HTMLElement>(`.fl-span[data-row="${CSS.escape(found.rowId)}"][data-span="${CSS.escape(found.spanId)}"]`) ?? spanEl;
+      live.classList.remove("dragging");
+      paint(from);   // the model decides: if you answer with a new model the span is redrawn there; if you refuse, it is back where it was
+      if (live !== spanEl) { live.style.left = `${from.start * this.view.pxPerFrame}px`; live.style.width = `${Math.max(1, (from.end - from.start) * this.view.pxPerFrame)}px`; }
+      if (dragging && (to.start !== from.start || to.end !== from.end)) this.emit("spanmove", { ...info(), phase: "end" });
+    };
+    window.addEventListener("pointermove", onMove); window.addEventListener("pointerup", onUp); window.addEventListener("pointercancel", onUp);
+    this.pointerOps.push(stop);   // destroying the timeline mid-drag must not leave the window listening
+  }
+
   private movesFor(delta: number, _grabbed: KeyRef | null): KeyMove[] {
     if (delta === 0) return [];
     return this.getSelection().flatMap((r) => { const k = this.keyOf(r); return k ? [{ ...r, from: k.frame, to: k.frame + delta }] : []; });
